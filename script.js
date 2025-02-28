@@ -7,12 +7,13 @@ canvas.height = window.innerHeight;
 // Player
 const player = {
   x: canvas.width / 2,
-  y: canvas.height - 50,
-  width: 50,
-  height: 50,
+  y: canvas.height / 2,
+  width: 30,
+  height: 30,
   color: "blue",
   speed: 5,
   dx: 0,
+  dy: 0,
   health: 100,
   maxHealth: 100,
 };
@@ -21,25 +22,14 @@ const player = {
 const bullets = [];
 const bulletSpeed = 7;
 
-// Enemy Bullets
-const enemyBullets = [];
-const enemyBulletSpeed = 4;
-
 // Enemies
 const enemies = [];
-const enemySpeed = 2;
+const enemySpeed = 1.5;
 const enemySpawnRate = 60; // Frames between enemy spawns
 let enemySpawnCounter = 0;
 
-// Power-ups
-const powerUps = [];
-const powerUpSpeed = 2;
-const powerUpSpawnRate = 300; // Frames between power-up spawns
-let powerUpSpawnCounter = 0;
-
 // Score
 let score = 0;
-let level = 1;
 
 // Draw Player
 function drawPlayer() {
@@ -61,39 +51,30 @@ function drawBullets() {
   });
 }
 
-// Draw Enemy Bullets
-function drawEnemyBullets() {
-  ctx.fillStyle = "orange";
-  enemyBullets.forEach((bullet) => {
-    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-  });
-}
-
 // Draw Enemies
 function drawEnemies() {
   ctx.fillStyle = "red";
   enemies.forEach((enemy) => {
     ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-  });
-}
 
-// Draw Power-ups
-function drawPowerUps() {
-  ctx.fillStyle = "lime";
-  powerUps.forEach((powerUp) => {
-    ctx.beginPath();
-    ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
-    ctx.fill();
+    // Draw Enemy Health Bar
+    ctx.fillStyle = "red";
+    ctx.fillRect(enemy.x, enemy.y - 10, enemy.width, 5);
+    ctx.fillStyle = "green";
+    ctx.fillRect(enemy.x, enemy.y - 10, (enemy.width * enemy.health) / enemy.maxHealth, 5);
   });
 }
 
 // Move Player
 function movePlayer() {
   player.x += player.dx;
+  player.y += player.dy;
 
   // Boundary detection
   if (player.x < 0) player.x = 0;
   if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+  if (player.y < 0) player.y = 0;
+  if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 }
 
 // Move Bullets
@@ -108,48 +89,37 @@ function moveBullets() {
   });
 }
 
-// Move Enemy Bullets
-function moveEnemyBullets() {
-  enemyBullets.forEach((bullet, index) => {
-    bullet.y += enemyBulletSpeed;
-
-    // Remove bullet if off screen
-    if (bullet.y > canvas.height) {
-      enemyBullets.splice(index, 1);
-    }
-  });
-}
-
 // Move Enemies
 function moveEnemies() {
   enemies.forEach((enemy, index) => {
-    enemy.y += enemySpeed;
+    // Move enemy towards the player
+    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    enemy.x += Math.cos(angle) * enemySpeed;
+    enemy.y += Math.sin(angle) * enemySpeed;
+
+    // Check collision with player
+    if (
+      enemy.x < player.x + player.width &&
+      enemy.x + enemy.width > player.x &&
+      enemy.y < player.y + player.height &&
+      enemy.y + enemy.height > player.y
+    ) {
+      // Collision detected
+      player.health -= 1;
+      if (player.health <= 0) {
+        alert(`Game Over! Your score: ${score}`);
+        document.location.reload();
+      }
+    }
 
     // Remove enemy if off screen
-    if (enemy.y > canvas.height) {
+    if (
+      enemy.x + enemy.width < 0 ||
+      enemy.x > canvas.width ||
+      enemy.y + enemy.height < 0 ||
+      enemy.y > canvas.height
+    ) {
       enemies.splice(index, 1);
-    }
-
-    // Enemy shooting
-    if (Math.random() < 0.01) {
-      enemyBullets.push({
-        x: enemy.x + enemy.width / 2 - 5,
-        y: enemy.y + enemy.height,
-        width: 10,
-        height: 20,
-      });
-    }
-  });
-}
-
-// Move Power-ups
-function movePowerUps() {
-  powerUps.forEach((powerUp, index) => {
-    powerUp.y += powerUpSpeed;
-
-    // Remove power-up if off screen
-    if (powerUp.y > canvas.height) {
-      powerUps.splice(index, 1);
     }
   });
 }
@@ -157,28 +127,18 @@ function movePowerUps() {
 // Spawn Enemies
 function spawnEnemy() {
   const enemy = {
-    x: Math.random() * (canvas.width - 50),
-    y: 0,
-    width: 50,
-    height: 50,
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    width: 20,
+    height: 20,
+    health: 50,
+    maxHealth: 50,
   };
   enemies.push(enemy);
 }
 
-// Spawn Power-ups
-function spawnPowerUp() {
-  const powerUp = {
-    x: Math.random() * (canvas.width - 20),
-    y: 0,
-    radius: 10,
-    type: Math.random() < 0.5 ? "health" : "speed",
-  };
-  powerUps.push(powerUp);
-}
-
-// Check Collisions
+// Check Bullet Collisions with Enemies
 function checkCollisions() {
-  // Bullets hitting enemies
   bullets.forEach((bullet, bulletIndex) => {
     enemies.forEach((enemy, enemyIndex) => {
       if (
@@ -189,56 +149,21 @@ function checkCollisions() {
       ) {
         // Collision detected
         bullets.splice(bulletIndex, 1);
-        enemies.splice(enemyIndex, 1);
-        score += 10;
+        enemy.health -= 25; // Reduce enemy health
+        if (enemy.health <= 0) {
+          enemies.splice(enemyIndex, 1);
+          score += 10;
+        }
       }
     });
   });
-
-  // Enemy bullets hitting player
-  enemyBullets.forEach((bullet, bulletIndex) => {
-    if (
-      bullet.x < player.x + player.width &&
-      bullet.x + bullet.width > player.x &&
-      bullet.y < player.y + player.height &&
-      bullet.y + bullet.height > player.y
-    ) {
-      // Collision detected
-      enemyBullets.splice(bulletIndex, 1);
-      player.health -= 10;
-      if (player.health <= 0) {
-        alert(`Game Over! Your score: ${score}`);
-        document.location.reload();
-      }
-    }
-  });
-
-  // Power-ups hitting player
-  powerUps.forEach((powerUp, index) => {
-    if (
-      powerUp.x < player.x + player.width &&
-      powerUp.x + powerUp.radius * 2 > player.x &&
-      powerUp.y < player.y + player.height &&
-      powerUp.y + powerUp.radius * 2 > player.y
-    ) {
-      // Collision detected
-      powerUps.splice(index, 1);
-      if (powerUp.type === "health") {
-        player.health = Math.min(player.health + 20, player.maxHealth);
-      } else if (powerUp.type === "speed") {
-        player.speed += 2;
-        setTimeout(() => (player.speed -= 2), 5000); // Reset speed after 5 seconds
-      }
-    }
-  });
 }
 
-// Draw Score and Level
+// Draw Score
 function drawScore() {
   ctx.fillStyle = "white";
   ctx.font = "20px Arial";
   ctx.fillText(`Score: ${score}`, 10, 30);
-  ctx.fillText(`Level: ${level}`, 10, 60);
 }
 
 // Update Game
@@ -247,16 +172,12 @@ function update() {
 
   movePlayer();
   moveBullets();
-  moveEnemyBullets();
   moveEnemies();
-  movePowerUps();
   checkCollisions();
 
   drawPlayer();
   drawBullets();
-  drawEnemyBullets();
   drawEnemies();
-  drawPowerUps();
   drawScore();
 
   // Spawn enemies
@@ -265,19 +186,6 @@ function update() {
   }
   enemySpawnCounter++;
 
-  // Spawn power-ups
-  if (powerUpSpawnCounter % powerUpSpawnRate === 0) {
-    spawnPowerUp();
-  }
-  powerUpSpawnCounter++;
-
-  // Increase level
-  if (score >= level * 100) {
-    level++;
-    enemySpeed += 0.5;
-    enemySpawnRate = Math.max(30, enemySpawnRate - 10);
-  }
-
   requestAnimationFrame(update);
 }
 
@@ -285,6 +193,8 @@ function update() {
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") player.dx = -player.speed;
   if (e.key === "ArrowRight") player.dx = player.speed;
+  if (e.key === "ArrowUp") player.dy = -player.speed;
+  if (e.key === "ArrowDown") player.dy = player.speed;
   if (e.key === " " && bullets.length < 5) {
     // Spacebar to shoot (limit 5 bullets)
     bullets.push({
@@ -298,6 +208,7 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft" || e.key === "ArrowRight") player.dx = 0;
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") player.dy = 0;
 });
 
 // Start Game

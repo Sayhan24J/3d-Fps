@@ -12,6 +12,14 @@ const GAME_STATES = {
 };
 let gameState = GAME_STATES.MENU;
 
+// Difficulty Settings
+const DIFFICULTY = {
+  EASY: { enemySpeed: 1, enemySpawnRate: 90, playerHealth: 150 },
+  MEDIUM: { enemySpeed: 1.5, enemySpawnRate: 60, playerHealth: 100 },
+  HARD: { enemySpeed: 2, enemySpawnRate: 30, playerHealth: 75 },
+};
+let currentDifficulty = DIFFICULTY.MEDIUM;
+
 // Player
 const player = {
   x: canvas.width / 2,
@@ -34,8 +42,8 @@ const bulletSpeed = 7;
 
 // Enemies
 const enemies = [];
-const enemySpeed = 1.5;
-const enemySpawnRate = 60; // Frames between enemy spawns
+let enemySpeed = 1.5;
+let enemySpawnRate = 60; // Frames between enemy spawns
 let enemySpawnCounter = 0;
 
 // Score
@@ -60,6 +68,12 @@ menu.innerHTML = `
     <option value="circle">Circle</option>
     <option value="triangle">Triangle</option>
   </select>
+  <label for="difficultySelect">Choose Difficulty:</label>
+  <select id="difficultySelect">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
   <button id="startButton">Start Game</button>
 `;
 document.body.appendChild(menu);
@@ -69,6 +83,14 @@ document.getElementById("startButton").addEventListener("click", () => {
   // Set player color and shape
   player.color = document.getElementById("colorPicker").value;
   player.shape = document.getElementById("shapeSelect").value;
+
+  // Set difficulty
+  const difficulty = document.getElementById("difficultySelect").value;
+  currentDifficulty = DIFFICULTY[difficulty.toUpperCase()];
+  player.health = currentDifficulty.playerHealth;
+  player.maxHealth = currentDifficulty.playerHealth;
+  enemySpeed = currentDifficulty.enemySpeed;
+  enemySpawnRate = currentDifficulty.enemySpawnRate;
 
   // Hide menu and start game
   menu.style.display = "none";
@@ -303,5 +325,3 @@ canvas.addEventListener("mousedown", () => {
     });
   }
 });
- 
-

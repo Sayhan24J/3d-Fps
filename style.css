@@ -37,7 +37,7 @@ canvas {
   margin-bottom: 20px;
 }
 
-#menu button {
+#menu select, #menu button {
   display: block;
   margin: 10px auto;
   padding: 10px 20px;

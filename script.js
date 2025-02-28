@@ -16,6 +16,7 @@ const player = {
   dy: 0,
   health: 100,
   maxHealth: 100,
+  angle: 0, // Angle to point toward the mouse
 };
 
 // Bullets
@@ -31,10 +32,20 @@ let enemySpawnCounter = 0;
 // Score
 let score = 0;
 
+// Mouse position
+let mouse = {
+  x: 0,
+  y: 0,
+};
+
 // Draw Player
 function drawPlayer() {
+  ctx.save();
+  ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+  ctx.rotate(player.angle);
   ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+  ctx.restore();
 
   // Draw Health Bar
   ctx.fillStyle = "red";
@@ -80,10 +91,16 @@ function movePlayer() {
 // Move Bullets
 function moveBullets() {
   bullets.forEach((bullet, index) => {
-    bullet.y -= bulletSpeed;
+    bullet.x += Math.cos(bullet.angle) * bulletSpeed;
+    bullet.y += Math.sin(bullet.angle) * bulletSpeed;
 
     // Remove bullet if off screen
-    if (bullet.y + bullet.height < 0) {
+    if (
+      bullet.x < 0 ||
+      bullet.x > canvas.width ||
+      bullet.y < 0 ||
+      bullet.y > canvas.height
+    ) {
       bullets.splice(index, 1);
     }
   });
@@ -189,26 +206,39 @@ function update() {
   requestAnimationFrame(update);
 }
 
-// Event Listeners
+// Event Listeners for WASD Movement
 window.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowLeft") player.dx = -player.speed;
-  if (e.key === "ArrowRight") player.dx = player.speed;
-  if (e.key === "ArrowUp") player.dy = -player.speed;
-  if (e.key === "ArrowDown") player.dy = player.speed;
-  if (e.key === " " && bullets.length < 5) {
-    // Spacebar to shoot (limit 5 bullets)
-    bullets.push({
-      x: player.x + player.width / 2 - 5,
-      y: player.y,
-      width: 10,
-      height: 20,
-    });
-  }
+  if (e.key === "w") player.dy = -player.speed;
+  if (e.key === "s") player.dy = player.speed;
+  if (e.key === "a") player.dx = -player.speed;
+  if (e.key === "d") player.dx = player.speed;
 });
 
 window.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowLeft" || e.key === "ArrowRight") player.dx = 0;
-  if (e.key === "ArrowUp" || e.key === "ArrowDown") player.dy = 0;
+  if (e.key === "w" || e.key === "s") player.dy = 0;
+  if (e.key === "a" || e.key === "d") player.dx = 0;
+});
+
+// Event Listener for Mouse Movement
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - rect.left;
+  mouse.y = e.clientY - rect.top;
+
+  // Calculate angle to point toward the mouse
+  player.angle = Math.atan2(mouse.y - (player.y + player.height / 2), mouse.x - (player.x + player.width / 2));
+});
+
+// Event Listener for Mouse Click (Shooting)
+canvas.addEventListener("mousedown", () => {
+  // Spawn bullet in the direction of the mouse
+  bullets.push({
+    x: player.x + player.width / 2,
+    y: player.y + player.height / 2,
+    width: 10,
+    height: 10,
+    angle: player.angle, // Bullet moves in the direction of the mouse
+  });
 });
 
 // Start Game

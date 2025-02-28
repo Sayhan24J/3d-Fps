@@ -16,4 +16,4 @@ A simple 2D shooter game built with HTML5 Canvas and JavaScript.
 3. Avoid enemy bullets and collect power-ups.
 
 ## Live Demo
-[Play the game here!](https://your-github-username.github.io/shooter-game/)
+[Play the game here!](https://github.io/Sayhan24J/3d-Fps)

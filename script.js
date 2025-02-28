@@ -12,21 +12,14 @@ const GAME_STATES = {
 };
 let gameState = GAME_STATES.MENU;
 
-// Difficulty Settings
-const DIFFICULTY = {
-  EASY: { enemySpeed: 1, enemySpawnRate: 90, playerHealth: 150 },
-  MEDIUM: { enemySpeed: 1.5, enemySpawnRate: 60, playerHealth: 100 },
-  HARD: { enemySpeed: 2, enemySpawnRate: 30, playerHealth: 75 },
-};
-let currentDifficulty = DIFFICULTY.MEDIUM;
-
 // Player
 const player = {
   x: canvas.width / 2,
   y: canvas.height / 2,
   width: 30,
   height: 30,
-  color: "blue",
+  color: "blue", // Default color
+  shape: "square", // Default shape
   speed: 5,
   dx: 0,
   dy: 0,
@@ -41,8 +34,8 @@ const bulletSpeed = 7;
 
 // Enemies
 const enemies = [];
-let enemySpeed = 1.5;
-let enemySpawnRate = 60; // Frames between enemy spawns
+const enemySpeed = 1.5;
+const enemySpawnRate = 60; // Frames between enemy spawns
 let enemySpawnCounter = 0;
 
 // Score
@@ -59,50 +52,57 @@ const menu = document.createElement("div");
 menu.id = "menu";
 menu.innerHTML = `
   <h1>Shooter Game</h1>
-  <button id="easyButton">Easy</button>
-  <button id="mediumButton">Medium</button>
-  <button id="hardButton">Hard</button>
+  <label for="colorPicker">Choose Avatar Color:</label>
+  <input type="color" id="colorPicker" value="#0000ff">
+  <label for="shapeSelect">Choose Avatar Shape:</label>
+  <select id="shapeSelect">
+    <option value="square">Square</option>
+    <option value="circle">Circle</option>
+    <option value="triangle">Triangle</option>
+  </select>
+  <button id="startButton">Start Game</button>
 `;
 document.body.appendChild(menu);
 
-// Difficulty Buttons
-document.getElementById("easyButton").addEventListener("click", () => {
-  startGame(DIFFICULTY.EASY);
-});
-document.getElementById("mediumButton").addEventListener("click", () => {
-  startGame(DIFFICULTY.MEDIUM);
-});
-document.getElementById("hardButton").addEventListener("click", () => {
-  startGame(DIFFICULTY.HARD);
-});
-
-// Start Game Function
-function startGame(difficulty) {
-  currentDifficulty = difficulty;
-  player.health = difficulty.playerHealth;
-  player.maxHealth = difficulty.playerHealth;
-  enemySpeed = difficulty.enemySpeed;
-  enemySpawnRate = difficulty.enemySpawnRate;
-
-  // Reset game state
-  bullets.length = 0;
-  enemies.length = 0;
-  score = 0;
-  enemySpawnCounter = 0;
+// Start Game Button
+document.getElementById("startButton").addEventListener("click", () => {
+  // Set player color and shape
+  player.color = document.getElementById("colorPicker").value;
+  player.shape = document.getElementById("shapeSelect").value;
 
   // Hide menu and start game
   menu.style.display = "none";
   gameState = GAME_STATES.PLAYING;
   update();
-}
+});
 
 // Draw Player
 function drawPlayer() {
   ctx.save();
   ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
   ctx.rotate(player.angle);
+
   ctx.fillStyle = player.color;
-  ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+
+  switch (player.shape) {
+    case "square":
+      ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+      break;
+    case "circle":
+      ctx.beginPath();
+      ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "triangle":
+      ctx.beginPath();
+      ctx.moveTo(0, -player.height / 2);
+      ctx.lineTo(-player.width / 2, player.height / 2);
+      ctx.lineTo(player.width / 2, player.height / 2);
+      ctx.closePath();
+      ctx.fill();
+      break;
+  }
+
   ctx.restore();
 
   // Draw Health Bar

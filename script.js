@@ -4,6 +4,22 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// Game States
+const GAME_STATES = {
+  MENU: "MENU",
+  PLAYING: "PLAYING",
+  GAME_OVER: "GAME_OVER",
+};
+let gameState = GAME_STATES.MENU;
+
+// Difficulty Settings
+const DIFFICULTY = {
+  EASY: { enemySpeed: 1, enemySpawnRate: 90, playerHealth: 150 },
+  MEDIUM: { enemySpeed: 1.5, enemySpawnRate: 60, playerHealth: 100 },
+  HARD: { enemySpeed: 2, enemySpawnRate: 30, playerHealth: 75 },
+};
+let currentDifficulty = DIFFICULTY.MEDIUM;
+
 // Player
 const player = {
   x: canvas.width / 2,
@@ -25,8 +41,8 @@ const bulletSpeed = 7;
 
 // Enemies
 const enemies = [];
-const enemySpeed = 1.5;
-const enemySpawnRate = 60; // Frames between enemy spawns
+let enemySpeed = 1.5;
+let enemySpawnRate = 60; // Frames between enemy spawns
 let enemySpawnCounter = 0;
 
 // Score
@@ -37,6 +53,48 @@ let mouse = {
   x: 0,
   y: 0,
 };
+
+// Main Menu
+const menu = document.createElement("div");
+menu.id = "menu";
+menu.innerHTML = `
+  <h1>Shooter Game</h1>
+  <button id="easyButton">Easy</button>
+  <button id="mediumButton">Medium</button>
+  <button id="hardButton">Hard</button>
+`;
+document.body.appendChild(menu);
+
+// Difficulty Buttons
+document.getElementById("easyButton").addEventListener("click", () => {
+  startGame(DIFFICULTY.EASY);
+});
+document.getElementById("mediumButton").addEventListener("click", () => {
+  startGame(DIFFICULTY.MEDIUM);
+});
+document.getElementById("hardButton").addEventListener("click", () => {
+  startGame(DIFFICULTY.HARD);
+});
+
+// Start Game Function
+function startGame(difficulty) {
+  currentDifficulty = difficulty;
+  player.health = difficulty.playerHealth;
+  player.maxHealth = difficulty.playerHealth;
+  enemySpeed = difficulty.enemySpeed;
+  enemySpawnRate = difficulty.enemySpawnRate;
+
+  // Reset game state
+  bullets.length = 0;
+  enemies.length = 0;
+  score = 0;
+  enemySpawnCounter = 0;
+
+  // Hide menu and start game
+  menu.style.display = "none";
+  gameState = GAME_STATES.PLAYING;
+  update();
+}
 
 // Draw Player
 function drawPlayer() {
@@ -124,6 +182,7 @@ function moveEnemies() {
       // Collision detected
       player.health -= 1;
       if (player.health <= 0) {
+        gameState = GAME_STATES.GAME_OVER;
         alert(`Game Over! Your score: ${score}`);
         document.location.reload();
       }
@@ -185,6 +244,8 @@ function drawScore() {
 
 // Update Game
 function update() {
+  if (gameState !== GAME_STATES.PLAYING) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   movePlayer();
@@ -231,15 +292,16 @@ canvas.addEventListener("mousemove", (e) => {
 
 // Event Listener for Mouse Click (Shooting)
 canvas.addEventListener("mousedown", () => {
-  // Spawn bullet in the direction of the mouse
-  bullets.push({
-    x: player.x + player.width / 2,
-    y: player.y + player.height / 2,
-    width: 10,
-    height: 10,
-    angle: player.angle, // Bullet moves in the direction of the mouse
-  });
+  if (gameState === GAME_STATES.PLAYING) {
+    // Spawn bullet in the direction of the mouse
+    bullets.push({
+      x: player.x + player.width / 2,
+      y: player.y + player.height / 2,
+      width: 10,
+      height: 10,
+      angle: player.angle, // Bullet moves in the direction of the mouse
+    });
+  }
 });
+ 
 
-// Start Game
-update();

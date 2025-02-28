@@ -1,73 +1,92 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150/build/three.module.js';
-import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
-import { Weapon } from './weapon.js';
+import { Bullet } from './bullet.js';
 
-let scene, camera, renderer, world, player, weapon;
-const enemies = [];
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 800;
+canvas.height = 600;
+
+let player = new Player(canvas.width / 2, canvas.height / 2);
+let enemies = [];
+let bullets = [];
 let score = 0;
+let isGameOver = false;
 
-function init() {
-    // Three.js Scene
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // Cannon.js Physics World
-    world = new CANNON.World();
-    world.gravity.set(0, -9.8, 0);
-
-    // UI Elements
-    const scoreText = document.createElement('div');
-    scoreText.style.position = 'absolute';
-    scoreText.style.top = '10px';
-    scoreText.style.left = '10px';
-    scoreText.style.color = 'white';
-    scoreText.innerHTML = 'Score: 0';
-    document.body.appendChild(scoreText);
-
-    // Player Setup
-    player = new Player(scene, camera, world);
-    weapon = new Weapon(scene, world, enemies);
-
-    // Ground
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);
-    const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
-
-    // Spawn Enemies
-    for (let i = 0; i < 3; i++) {
-        const enemy = new Enemy(scene, world, player);
-        enemies.push(enemy);
-    }
-
-    // Game Loop
-    animate(scoreText);
+function spawnEnemy() {
+    let x = Math.random() > 0.5 ? 0 : canvas.width;
+    let y = Math.random() * canvas.height;
+    enemies.push(new Enemy(x, y));
 }
 
-function animate(scoreText) {
-    requestAnimationFrame(() => animate(scoreText));
-    world.step(1 / 60);
+setInterval(spawnEnemy, 2000);
 
+function gameLoop() {
+    if (isGameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     player.update();
-    weapon.update();
-    enemies.forEach((enemy) => enemy.update());
+    player.draw(ctx);
 
-    // Check for enemy deaths and update score
-    enemies.forEach((enemy, index) => {
-        if (enemy.health <= 0) {
-            enemies.splice(index, 1);
-            score += 10;
-            scoreText.innerHTML = `Score: ${score}`;
+    bullets.forEach((bullet, index) => {
+        bullet.update();
+        bullet.draw(ctx);
+        if (bullet.x > canvas.width || bullet.x < 0 || bullet.y > canvas.height || bullet.y < 0) {
+            bullets.splice(index, 1);
         }
     });
 
-    renderer.render(scene, camera);
+    enemies.forEach((enemy, eIndex) => {
+        enemy.update(player.x, player.y);
+        enemy.draw(ctx);
+
+        bullets.forEach((bullet, bIndex) => {
+            if (bullet.collidesWith(enemy)) {
+                bullets.splice(bIndex, 1);
+                enemies.splice(eIndex, 1);
+                score += 10;
+                document.getElementById("score").innerText = score;
+            }
+        });
+
+        if (enemy.collidesWith(player)) {
+            player.health -= 10;
+            document.getElementById("health").innerText = player.health;
+            if (player.health <= 0) gameOver();
+        }
+    });
+
+    requestAnimationFrame(gameLoop);
 }
 
-init();
+function gameOver() {
+    isGameOver = true;
+    document.getElementById("gameOverScreen").style.display = "block";
+}
+
+window.restartGame = function () {
+    document.getElementById("gameOverScreen").style.display = "none";
+    isGameOver = false;
+    player.health = 100;
+    enemies = [];
+    bullets = [];
+    score = 0;
+    document.getElementById("score").innerText = score;
+    document.getElementById("health").innerText = player.health;
+    gameLoop();
+};
+
+window.addEventListener("keydown", (e) => player.move(e));
+window.addEventListener("click", (e) => bullets.push(new Bullet(player.x, player.y, e.clientX, e.clientY, player.weapon)));
+
+window.addEventListener("keydown", (e) => {
+    if (e.key === "1") {
+        player.weapon = "Pistol";
+    } else if (e.key === "2") {
+        player.weapon = "Shotgun";
+    }
+    document.getElementById("weapon").innerText = player.weapon;
+});
+
+gameLoop();

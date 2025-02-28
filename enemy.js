@@ -1,45 +1,25 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150/build/three.module.js';
-import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
-
 export class Enemy {
-    constructor(scene, world, player) {
-        this.scene = scene;
-        this.world = world;
-        this.player = player;
-        this.health = 3; // Enemy health
-
-        // Enemy Mesh
-        const geometry = new THREE.BoxGeometry(1, 2, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.set(Math.random() * 10 - 5, 1, Math.random() * -10);
-        this.scene.add(this.mesh);
-
-        // Enemy Physics
-        this.body = new CANNON.Body({ mass: 1, shape: new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5)) });
-        this.body.position.copy(this.mesh.position);
-        this.world.addBody(this.body);
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = 20;
+        this.speed = 1.5;
     }
 
-    update() {
-        // Move towards player
-        const direction = new THREE.Vector3(
-            this.player.body.position.x - this.body.position.x,
-            0,
-            this.player.body.position.z - this.body.position.z
-        );
-        direction.normalize();
-        this.body.velocity.set(direction.x * 2, this.body.velocity.y, direction.z * 2);
-
-        // Update Mesh Position
-        this.mesh.position.copy(this.body.position);
+    update(playerX, playerY) {
+        let dx = playerX - this.x;
+        let dy = playerY - this.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        this.x += (dx / distance) * this.speed;
+        this.y += (dy / distance) * this.speed;
     }
 
-    takeDamage() {
-        this.health -= 1;
-        if (this.health <= 0) {
-            this.scene.remove(this.mesh);
-            this.world.removeBody(this.body);
-        }
+    draw(ctx) {
+        ctx.fillStyle = "red";
+        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+    }
+
+    collidesWith(player) {
+        return Math.abs(this.x - player.x) < 20 && Math.abs(this.y - player.y) < 20;
     }
 }

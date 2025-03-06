@@ -27,17 +27,31 @@ canvas {
   margin-bottom: 20px;
 }
 
-#menu label {
-  display: block;
-  margin: 10px 0 5px;
-  font-size: 1.2rem;
+#pixelDesigner {
+  display: grid;
+  grid-template-columns: repeat(8, 30px);
+  grid-template-rows: repeat(8, 30px);
+  gap: 2px;
+  margin: 20px auto;
 }
 
-#menu input[type="color"] {
-  margin-bottom: 20px;
+#pixelDesigner div {
+  width: 30px;
+  height: 30px;
+  background-color: #333;
+  border: 1px solid #555;
+  cursor: pointer;
 }
 
-#menu select, #menu button {
+#pixelDesigner div:hover {
+  background-color: #444;
+}
+
+#colorPicker {
+  margin: 20px auto;
+}
+
+#menu button {
   display: block;
   margin: 10px auto;
   padding: 10px 20px;

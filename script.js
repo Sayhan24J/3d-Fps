@@ -27,7 +27,7 @@ const player = {
   width: 30,
   height: 30,
   color: "blue", // Default color
-  shape: "square", // Default shape
+  pixelArt: [], // Stores the player's pixel art design
   speed: 5,
   dx: 0,
   dy: 0,
@@ -60,14 +60,9 @@ const menu = document.createElement("div");
 menu.id = "menu";
 menu.innerHTML = `
   <h1>Shooter Game</h1>
-  <label for="colorPicker">Choose Avatar Color:</label>
+  <div id="pixelDesigner"></div>
+  <label for="colorPicker">Choose Color:</label>
   <input type="color" id="colorPicker" value="#0000ff">
-  <label for="shapeSelect">Choose Avatar Shape:</label>
-  <select id="shapeSelect">
-    <option value="square">Square</option>
-    <option value="circle">Circle</option>
-    <option value="triangle">Triangle</option>
-  </select>
   <label for="difficultySelect">Choose Difficulty:</label>
   <select id="difficultySelect">
     <option value="easy">Easy</option>
@@ -78,11 +73,33 @@ menu.innerHTML = `
 `;
 document.body.appendChild(menu);
 
+// Pixel Designer
+const pixelDesigner = document.getElementById("pixelDesigner");
+const colorPicker = document.getElementById("colorPicker");
+let currentColor = "#0000ff";
+
+// Create 8x8 grid for pixel art
+for (let i = 0; i < 64; i++) {
+  const pixel = document.createElement("div");
+  pixel.addEventListener("click", () => {
+    pixel.style.backgroundColor = currentColor;
+  });
+  pixelDesigner.appendChild(pixel);
+}
+
+// Update current color
+colorPicker.addEventListener("input", (e) => {
+  currentColor = e.target.value;
+});
+
 // Start Game Button
 document.getElementById("startButton").addEventListener("click", () => {
-  // Set player color and shape
-  player.color = document.getElementById("colorPicker").value;
-  player.shape = document.getElementById("shapeSelect").value;
+  // Save pixel art design
+  player.pixelArt = [];
+  const pixels = pixelDesigner.querySelectorAll("div");
+  pixels.forEach((pixel) => {
+    player.pixelArt.push(pixel.style.backgroundColor || "#333");
+  });
 
   // Set difficulty
   const difficulty = document.getElementById("difficultySelect").value;
@@ -104,25 +121,18 @@ function drawPlayer() {
   ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
   ctx.rotate(player.angle);
 
-  ctx.fillStyle = player.color;
-
-  switch (player.shape) {
-    case "square":
-      ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-      break;
-    case "circle":
-      ctx.beginPath();
-      ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
-      ctx.fill();
-      break;
-    case "triangle":
-      ctx.beginPath();
-      ctx.moveTo(0, -player.height / 2);
-      ctx.lineTo(-player.width / 2, player.height / 2);
-      ctx.lineTo(player.width / 2, player.height / 2);
-      ctx.closePath();
-      ctx.fill();
-      break;
+  // Draw pixel art
+  const pixelSize = player.width / 8;
+  for (let i = 0; i < 64; i++) {
+    const row = Math.floor(i / 8);
+    const col = i % 8;
+    ctx.fillStyle = player.pixelArt[i] || "#333";
+    ctx.fillRect(
+      col * pixelSize - player.width / 2,
+      row * pixelSize - player.height / 2,
+      pixelSize,
+      pixelSize
+    );
   }
 
   ctx.restore();
@@ -325,3 +335,6 @@ canvas.addEventListener("mousedown", () => {
     });
   }
 });
+
+
+
